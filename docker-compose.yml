@@ -1,0 +1,70 @@
+
+services:
+  gem5-dev:
+    image: ubuntu:24.04
+    container_name: csc368-gem5-dev
+    platform: linux/amd64
+
+    # Keep container running
+    stdin_open: true
+    tty: true
+
+    # Privileged mode for full system access
+    privileged: true
+
+    # Port mappings
+    ports:
+      - "2222:22"  # SSH access (host:container)
+
+    # Volume mounts
+    volumes:
+      - ./:/workspace
+      - gem5-build:/opt/gem5  # Persistent gem5 installation
+
+    # Working directory
+    working_dir: /workspace
+
+    # Environment variables
+    environment:
+      - DEBIAN_FRONTEND=noninteractive
+      - WORKSPACE=/workspace
+
+    # Run setup script on container start
+    command: >
+      bash -c "
+        if [ ! -f /workspace/.devcontainer/setup.sh ]; then
+          echo 'Error: setup.sh not found';
+          exit 1;
+        fi &&
+        bash /workspace/.devcontainer/setup.sh &&
+        echo '' &&
+        echo '======================================================================' &&
+        echo '  Container is ready! You can now:' &&
+        echo '======================================================================' &&
+        echo '' &&
+        echo '  1. Access the container:' &&
+        echo '     docker exec -it csc368-gem5-dev bash' &&
+        echo '' &&
+        echo '  2. SSH into the container (from another terminal):' &&
+        echo '     ssh root@localhost -p 2222' &&
+        echo '     Password: gem5pass' &&
+        echo '' &&
+        echo '  3. Run Terraform inside the container:' &&
+        echo '     docker exec -it csc368-gem5-dev bash' &&
+        echo '     cd infrastructure && terraform init && terraform apply' &&
+        echo '' &&
+        echo '======================================================================' &&
+        tail -f /dev/null
+      "
+
+    # Health check
+    healthcheck:
+      test: ["CMD", "service", "ssh", "status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  gem5-build:
+    driver: local

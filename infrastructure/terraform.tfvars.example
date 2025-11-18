@@ -1,0 +1,11 @@
+# Copy this file to terraform.tfvars and fill in your actual values
+# DO NOT commit terraform.tfvars to version control!
+
+vm_username = "your-username"
+vm_address  = "192.168.1.100"  # or hostname like "vm.example.com"
+vm_password = "your-password"
+
+# Optional: Uncomment and modify these if needed
+# ssh_port = 22
+# python_version = "3.13"
+# gem5_install_path = "/opt/gem5"

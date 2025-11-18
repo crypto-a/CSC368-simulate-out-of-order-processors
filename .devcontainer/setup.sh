@@ -74,10 +74,10 @@ echo "Root password: gem5pass"
 echo ""
 echo "To connect Terraform to this container:"
 echo "  1. From inside this container:"
-echo "     cd terraform"
+echo "     cd infrastructure"
 echo "     cp terraform.tfvars.example terraform.tfvars"
-echo '     Edit: vm_host = "localhost"'
-echo '           vm_user = "root"'
+echo '     Edit: vm_address = "localhost"'
+echo '           vm_username = "root"'
 echo '           vm_password = "gem5pass"'
 echo "     terraform init"
 echo "     terraform apply"
@@ -85,8 +85,8 @@ echo ""
 echo "  2. Container will install gem5 and run simulations locally!"
 echo ""
 echo "Quick commands:"
-echo "  - Test terraform: cd terraform && terraform --version"
+echo "  - Test terraform: cd infrastructure && terraform --version"
 echo "  - Check SSH: service ssh status"
-echo "  - Run terraform: cd terraform && terraform apply"
+echo "  - Run terraform: cd infrastructure && terraform apply"
 echo ""
 echo "========================================================================"
