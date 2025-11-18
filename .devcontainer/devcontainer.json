@@ -1,0 +1,54 @@
+{
+  "name": "CSC368 gem5 Development & Simulation",
+  "image": "ubuntu:24.04",
+
+  // Force x86_64/amd64 platform for gem5 compatibility
+  "runArgs": ["--platform=linux/amd64"],
+
+  "features": {
+    "ghcr.io/devcontainers/features/common-utils:2": {
+      "installZsh": true,
+      "installOhMyZsh": true,
+      "upgradePackages": true,
+      "username": "vscode",
+      "userUid": 1000,
+      "userGid": 1000
+    },
+    "ghcr.io/devcontainers/features/git:1": {},
+    "ghcr.io/devcontainers/features/terraform:1": {
+      "version": "latest"
+    }
+  },
+
+  "postCreateCommand": "bash .devcontainer/setup.sh",
+
+  // Expose SSH port for Terraform connection
+  "forwardPorts": [22],
+  "portsAttributes": {
+    "22": {
+      "label": "SSH",
+      "onAutoForward": "notify"
+    }
+  },
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "hashicorp.terraform",
+        "ms-python.python",
+        "ms-vscode.makefile-tools"
+      ],
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "bash"
+      }
+    }
+  },
+
+  "remoteUser": "root",
+  "workspaceFolder": "/workspace",
+  "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind",
+
+  // Keep container running
+  "overrideCommand": false,
+  "privileged": true
+}

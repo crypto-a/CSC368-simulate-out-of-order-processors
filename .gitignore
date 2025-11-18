@@ -1,0 +1,58 @@
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Data directory (simulation results)
+data/*
+!data/README.md
+!data/.gitkeep
+
+# Simulation results
+simulation_results/
+*.log
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+venv/
+ENV/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Terraform (already in terraform/.gitignore, but just in case)
+terraform.tfvars
+*.tfstate
+*.tfstate.*
+.terraform/
+
+# OS files
+Thumbs.db
+.DS_Store
+
+# Backup files
+*.bak
