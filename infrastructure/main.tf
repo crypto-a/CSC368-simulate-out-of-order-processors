@@ -124,25 +124,71 @@ resource "null_resource" "install_gem5_and_python" {
 
       # Wait for simulations to complete (check if master_log contains 'All simulations complete')
       "echo 'Waiting for simulations to complete...'",
-      "timeout 14400 bash -c 'while ! grep -q \"All simulations complete\" ~/CSC368-simulate-out-of-order-processors/data/part4/master_log.txt 2>/dev/null; do sleep 30; echo \"Still running... (check: tail -f ~/CSC368-simulate-out-of-order-processors/data/part4/master_log.txt)\"; done' || echo 'Timeout reached (4 hours) - simulations may still be running'",
+      "echo 'This may take 1-4 hours depending on your VM performance...'",
 
-      "echo '===== Simulations finished or timeout reached ====='"
+      # Wait with a timeout and better status checking
+      "WAIT_TIME=0",
+      "MAX_WAIT=14400",  # 4 hours
+      "while [ $WAIT_TIME -lt $MAX_WAIT ]; do",
+      "  if grep -q 'All simulations complete' ~/CSC368-simulate-out-of-order-processors/data/part4/master_log.txt 2>/dev/null; then",
+      "    echo 'Simulations completed successfully!'",
+      "    cat ~/CSC368-simulate-out-of-order-processors/data/part4/status.json 2>/dev/null | grep -E '\"(completed|failed)\"' || true",
+      "    break",
+      "  fi",
+      "  sleep 30",
+      "  WAIT_TIME=$((WAIT_TIME + 30))",
+      "  COMPLETED=$(grep -c 'COMPLETED:' ~/CSC368-simulate-out-of-order-processors/data/part4/master_log.txt 2>/dev/null || echo '0')",
+      "  echo \"Progress: $COMPLETED completed (waited ${WAIT_TIME}s of ${MAX_WAIT}s max)\"",
+      "done",
+
+      "if [ $WAIT_TIME -ge $MAX_WAIT ]; then",
+      "  echo 'Timeout reached after 4 hours - simulations may still be running'",
+      "  echo 'You can check status with: ./scripts/check_status.sh'",
+      "  echo 'And retrieve data manually with: ./scripts/retrieve_data.sh'",
+      "fi",
+
+      "echo '===== Simulations finished or timeout reached ====='",
+
+      # Try to retrieve data immediately if completed
+      "if grep -q 'All simulations complete' ~/CSC368-simulate-out-of-order-processors/data/part4/master_log.txt 2>/dev/null; then",
+      "  echo 'Data is ready for retrieval'",
+      "  echo 'Files created:'",
+      "  find ~/CSC368-simulate-out-of-order-processors/data/part4 -name 'stats.txt' | wc -l | xargs echo 'Stats files:'",
+      "else",
+      "  echo 'Simulations may still be running in background'",
+      "fi"
     ]
   }
-}
 
-# Retrieve simulation data back to local machine
-resource "null_resource" "retrieve_data" {
-  depends_on = [null_resource.install_gem5_and_python]
-
-  # Trigger when simulations complete
-  triggers = {
-    simulation_id = null_resource.install_gem5_and_python.id
+  # Copy data retrieval script to VM for optional use
+  provisioner "file" {
+    source      = "${path.module}/../scripts/retrieve_data.sh"
+    destination = "/tmp/retrieve_data_vm.sh"
   }
 
-  # Copy data from VM to local machine
+  # Final attempt to retrieve data
   provisioner "local-exec" {
-    command     = "${path.module}/../scripts/retrieve_data.sh"
+    command = <<-EOT
+      echo "Attempting to retrieve simulation data..."
+
+      # Check if simulations are complete on VM
+      if ssh -p ${var.ssh_port} ${var.vm_username}@${var.vm_address} \
+         "grep -q 'All simulations complete' ~/CSC368-simulate-out-of-order-processors/data/part4/master_log.txt 2>/dev/null"; then
+        echo "Simulations confirmed complete, retrieving data..."
+        ${path.module}/../scripts/retrieve_data.sh
+      else
+        echo "================================================="
+        echo "Simulations may still be running on the VM"
+        echo ""
+        echo "To check status later:"
+        echo "  VM_USER=${var.vm_username} VM_HOST=${var.vm_address} ./scripts/check_status.sh"
+        echo ""
+        echo "To retrieve data when complete:"
+        echo "  VM_USER=${var.vm_username} VM_HOST=${var.vm_address} ./scripts/retrieve_data.sh"
+        echo "================================================="
+      fi
+    EOT
+
     environment = {
       VM_USER         = var.vm_username
       VM_HOST         = var.vm_address
