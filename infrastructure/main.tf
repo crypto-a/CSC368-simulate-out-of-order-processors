@@ -73,6 +73,10 @@ resource "null_resource" "install_gem5_and_python" {
       "python3 -m pip install --upgrade pip",
       "python3 -m pip install -r requirements.txt || echo 'Note: Some dependencies may have failed to install'",
 
+      "echo '===== Setting up workloads ====='",
+      "chmod +x infrastructure/setup_workloads.sh",
+      "bash infrastructure/setup_workloads.sh",
+
       "echo '===== Installation completed ====='",
       "echo 'Verifying installations...'",
       "python${var.python_version} --version",
@@ -101,5 +105,51 @@ resource "null_resource" "install_gem5_and_python" {
       "chmod +x /tmp/run-simulation.sh",
       "GEM5_PATH=${var.gem5_install_path} /tmp/run-simulation.sh"
     ]
+  }
+
+  # Run Part 4 simulations with automatic option selection
+  provisioner "remote-exec" {
+    inline = [
+      "echo '===== Running Part 4 Simulations ====='",
+      "cd ~/CSC368-simulate-out-of-order-processors",
+      "echo 'Starting simulations with nice priority...'",
+      "echo 'This will run all 36 simulations (4 at a time)...'",
+
+      # Use nohup to prevent disconnection issues and echo 1 to select option 1 (all simulations)
+      "nohup nice -n -10 bash -c 'echo 1 | python3 scripts/run_part4_sim.py > /tmp/part4_sim.log 2>&1' &",
+      "SIM_PID=$!",
+      "echo \"Simulations started with PID: $SIM_PID\"",
+      "echo \"Monitor progress: tail -f ~/CSC368-simulate-out-of-order-processors/data/part4/master_log.txt\"",
+      "echo \"Check status: cat ~/CSC368-simulate-out-of-order-processors/data/part4/status.json\"",
+
+      # Wait for simulations to complete (check if master_log contains 'All simulations complete')
+      "echo 'Waiting for simulations to complete...'",
+      "timeout 14400 bash -c 'while ! grep -q \"All simulations complete\" ~/CSC368-simulate-out-of-order-processors/data/part4/master_log.txt 2>/dev/null; do sleep 30; echo \"Still running... (check: tail -f ~/CSC368-simulate-out-of-order-processors/data/part4/master_log.txt)\"; done' || echo 'Timeout reached (4 hours) - simulations may still be running'",
+
+      "echo '===== Simulations finished or timeout reached ====='"
+    ]
+  }
+}
+
+# Retrieve simulation data back to local machine
+resource "null_resource" "retrieve_data" {
+  depends_on = [null_resource.install_gem5_and_python]
+
+  # Trigger when simulations complete
+  triggers = {
+    simulation_id = null_resource.install_gem5_and_python.id
+  }
+
+  # Copy data from VM to local machine
+  provisioner "local-exec" {
+    command     = "${path.module}/../scripts/retrieve_data.sh"
+    environment = {
+      VM_USER         = var.vm_username
+      VM_HOST         = var.vm_address
+      VM_PASSWORD     = var.vm_password
+      SSH_PORT        = var.ssh_port
+      REMOTE_DATA_DIR = "~/CSC368-simulate-out-of-order-processors/data/part4"
+      LOCAL_DATA_DIR  = "${path.module}/../data/part4"
+    }
   }
 }

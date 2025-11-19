@@ -18,11 +18,18 @@ from pathlib import Path
 import time
 from datetime import datetime
 from multiprocessing import Pool, cpu_count
+import json
+import threading
 
 # Define project paths
 PROJECT_ROOT = Path(__file__).parent.parent
 GEM5_SCRIPT = PROJECT_ROOT / "gem5scripts" / "a3_part4.py"
 DATA_DIR = PROJECT_ROOT / "data" / "part4"
+MASTER_LOG_FILE = DATA_DIR / "master_log.txt"
+STATUS_FILE = DATA_DIR / "status.json"
+
+# Thread lock for safe logging
+log_lock = threading.Lock()
 
 # Workloads to simulate (large inputs only, as per assignment)
 WORKLOADS = [
@@ -133,6 +140,49 @@ PROCESSOR_CONFIGS = {
 }
 
 
+def log_message(message, also_print=True):
+    """
+    Log message to master log file with timestamp.
+    Thread-safe logging for parallel execution.
+    """
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    log_entry = f"[{timestamp}] {message}\n"
+
+    with log_lock:
+        # Ensure log directory exists
+        MASTER_LOG_FILE.parent.mkdir(parents=True, exist_ok=True)
+
+        # Append to log file
+        with open(MASTER_LOG_FILE, 'a') as f:
+            f.write(log_entry)
+
+        # Also print to console
+        if also_print:
+            print(f"[{timestamp}] {message}")
+
+
+def update_status(status_data):
+    """
+    Update the status.json file with current simulation state.
+    This file can be checked to monitor progress.
+    """
+    with log_lock:
+        # Ensure directory exists
+        STATUS_FILE.parent.mkdir(parents=True, exist_ok=True)
+
+        # Write status file
+        with open(STATUS_FILE, 'w') as f:
+            json.dump(status_data, f, indent=2)
+
+
+def load_status():
+    """Load existing status file if it exists."""
+    if STATUS_FILE.exists():
+        with open(STATUS_FILE, 'r') as f:
+            return json.load(f)
+    return None
+
+
 def check_gem5_executable():
     """Check if gem5 executable exists and is accessible."""
     global GEM5_EXECUTABLE
@@ -204,6 +254,9 @@ def run_simulation_worker(job):
     # Log file for this simulation
     log_file = output_dir / "simulation.log"
 
+    # Log start
+    log_message(f"STARTING: {design_id}/{workload_name}")
+
     # Run the simulation
     start_time = time.time()
 
@@ -219,6 +272,12 @@ def run_simulation_worker(job):
         elapsed_time = time.time() - start_time
 
         success = result.returncode == 0
+
+        # Log completion
+        if success:
+            log_message(f"COMPLETED: {design_id}/{workload_name} in {elapsed_time:.1f}s")
+        else:
+            log_message(f"FAILED: {design_id}/{workload_name} (returncode: {result.returncode})")
 
         return {
             'name': f"{design_id}/{workload_name}",
@@ -367,8 +426,25 @@ def main():
 
     start_time = datetime.now()
 
+    # Initialize status tracking
+    initial_status = {
+        "start_time": start_time.isoformat(),
+        "total_simulations": total_simulations,
+        "completed": 0,
+        "failed": 0,
+        "in_progress": total_simulations,
+        "designs": designs_to_run,
+        "workloads": workloads_to_run,
+        "simulations": {}
+    }
+    update_status(initial_status)
+    log_message(f"Starting {total_simulations} simulations with {MAX_PARALLEL_PROCESSES} workers")
+
     # Run simulations in parallel using multiprocessing Pool
     print(f"\nLaunching {MAX_PARALLEL_PROCESSES}-worker pool...")
+    print(f"Monitor progress: tail -f {MASTER_LOG_FILE}")
+    print(f"Check status: cat {STATUS_FILE}\n")
+
     with Pool(processes=MAX_PARALLEL_PROCESSES) as pool:
         # Use map to run all jobs
         results = pool.map(run_simulation_worker, jobs)
@@ -394,6 +470,24 @@ def main():
             print(f"  Log: {result['log_file']}")
             if 'error' in result:
                 print(f"  Error: {result['error']}")
+
+    # Update final status
+    final_status = {
+        "start_time": start_time.isoformat(),
+        "end_time": end_time.isoformat(),
+        "total_simulations": total_simulations,
+        "completed": len(successful),
+        "failed": len(failed),
+        "in_progress": 0,
+        "wall_time_seconds": wall_time,
+        "total_sim_time_seconds": total_sim_time,
+        "designs": designs_to_run,
+        "workloads": workloads_to_run,
+        "successful_simulations": successful,
+        "failed_simulations": failed
+    }
+    update_status(final_status)
+    log_message(f"All simulations complete: {len(successful)} successful, {len(failed)} failed")
 
     # Print summary
     print("\n" + "=" * 80)
