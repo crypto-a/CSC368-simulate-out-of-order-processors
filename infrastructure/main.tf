@@ -115,33 +115,33 @@ resource "null_resource" "install_gem5_and_python" {
       "echo 'Starting simulations with nice priority...'",
       "echo 'This will run all 36 simulations (4 at a time)...'",
 
-      # Use nohup to prevent disconnection issues and echo 1 to select option 1 (all simulations)
+      "# Use nohup to prevent disconnection issues and echo 1 to select option 1 (all simulations)",
       "nohup nice -n -10 bash -c 'echo 1 | python3 scripts/run_part4_sim.py > /tmp/part4_sim.log 2>&1' &",
-      "SIM_PID=$!",
-      "echo \"Simulations started with PID: $SIM_PID\"",
+      "SIM_PID=$$!",
+      "echo \"Simulations started with PID: $$SIM_PID\"",
       "echo \"Monitor progress: tail -f ~/CSC368-simulate-out-of-order-processors/data/part4/master_log.txt\"",
       "echo \"Check status: cat ~/CSC368-simulate-out-of-order-processors/data/part4/status.json\"",
 
-      # Wait for simulations to complete (check if master_log contains 'All simulations complete')
+      "# Wait for simulations to complete (check if master_log contains 'All simulations complete')",
       "echo 'Waiting for simulations to complete...'",
       "echo 'This may take 1-4 hours depending on your VM performance...'",
 
-      # Wait with a timeout and better status checking
+      "# Wait with a timeout and better status checking",
       "WAIT_TIME=0",
-      "MAX_WAIT=14400",  # 4 hours
-      "while [ $WAIT_TIME -lt $MAX_WAIT ]; do",
+      "MAX_WAIT=14400",
+      "while [ $$WAIT_TIME -lt $$MAX_WAIT ]; do",
       "  if grep -q 'All simulations complete' ~/CSC368-simulate-out-of-order-processors/data/part4/master_log.txt 2>/dev/null; then",
       "    echo 'Simulations completed successfully!'",
       "    cat ~/CSC368-simulate-out-of-order-processors/data/part4/status.json 2>/dev/null | grep -E '\"(completed|failed)\"' || true",
       "    break",
       "  fi",
       "  sleep 30",
-      "  WAIT_TIME=$((WAIT_TIME + 30))",
-      "  COMPLETED=$(grep -c 'COMPLETED:' ~/CSC368-simulate-out-of-order-processors/data/part4/master_log.txt 2>/dev/null || echo '0')",
-      "  echo \"Progress: $COMPLETED completed (waited ${WAIT_TIME}s of ${MAX_WAIT}s max)\"",
+      "  WAIT_TIME=$$((WAIT_TIME + 30))",
+      "  COMPLETED=$$(grep -c 'COMPLETED:' ~/CSC368-simulate-out-of-order-processors/data/part4/master_log.txt 2>/dev/null || echo '0')",
+      "  echo \"Progress: $$COMPLETED completed (waited $${WAIT_TIME}s of $${MAX_WAIT}s max)\"",
       "done",
 
-      "if [ $WAIT_TIME -ge $MAX_WAIT ]; then",
+      "if [ $$WAIT_TIME -ge $$MAX_WAIT ]; then",
       "  echo 'Timeout reached after 4 hours - simulations may still be running'",
       "  echo 'You can check status with: ./scripts/check_status.sh'",
       "  echo 'And retrieve data manually with: ./scripts/retrieve_data.sh'",
@@ -149,7 +149,7 @@ resource "null_resource" "install_gem5_and_python" {
 
       "echo '===== Simulations finished or timeout reached ====='",
 
-      # Try to retrieve data immediately if completed
+      "# Try to retrieve data immediately if completed",
       "if grep -q 'All simulations complete' ~/CSC368-simulate-out-of-order-processors/data/part4/master_log.txt 2>/dev/null; then",
       "  echo 'Data is ready for retrieval'",
       "  echo 'Files created:'",
