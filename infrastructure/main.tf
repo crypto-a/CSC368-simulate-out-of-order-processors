@@ -57,11 +57,35 @@ resource "null_resource" "install_gem5_and_python" {
       "echo 'Building gem5 (this may take a while)...'",
       "echo '' | python3 $(which scons) build/X86/gem5.opt -j$(nproc) || echo 'Note: gem5 build may require manual intervention'",
 
+      "echo '===== Cloning CSC368 simulation repository ====='",
+      "cd ~",
+      "if [ -d 'CSC368-simulate-out-of-order-processors' ]; then",
+      "  echo 'Repository already exists, pulling latest changes...'",
+      "  cd CSC368-simulate-out-of-order-processors",
+      "  git pull",
+      "else",
+      "  echo 'Cloning repository...'",
+      "  git clone https://github.com/crypto-a/CSC368-simulate-out-of-order-processors.git",
+      "  cd CSC368-simulate-out-of-order-processors",
+      "fi",
+
+      "echo '===== Installing Python dependencies ====='",
+      "python3 -m pip install --upgrade pip",
+      "python3 -m pip install -r requirements.txt || echo 'Note: Some dependencies may have failed to install'",
+
       "echo '===== Installation completed ====='",
       "echo 'Verifying installations...'",
       "python${var.python_version} --version",
       "echo 'gem5 location: ${var.gem5_install_path}'",
-      "ls -la ${var.gem5_install_path}/build/X86/ || echo 'gem5 build not found - may need manual build'"
+      "ls -la ${var.gem5_install_path}/build/X86/ || echo 'gem5 build not found - may need manual build'",
+      "echo 'Project location: ~/CSC368-simulate-out-of-order-processors'",
+      "echo ''",
+      "echo '===== To run simulations ====='",
+      "echo 'cd ~/CSC368-simulate-out-of-order-processors'",
+      "echo 'nice -n -10 python3 scripts/run_part4_sim.py'",
+      "echo ''",
+      "echo 'Note: The main script runs at higher priority (nice -n -10)'",
+      "echo '      gem5 processes will run at normal/lower priority'"
     ]
   }
 
