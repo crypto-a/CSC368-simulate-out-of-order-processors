@@ -7,9 +7,9 @@ from m5.objects import *
 import argparse
 
 
-CSC368H1_DIR = '/u/csc368h/fall/pub'
-MIBENCH_SRC_DIR = f'{CSC368H1_DIR}/gem5-workloads/src/mibench'
-MIBENCH_BIN_DIR = f'{CSC368H1_DIR}/gem5-workloads/bin/mibench'
+CSC368H1_DIR = '/root/CSC368-simulate-out-of-order-processors'
+MIBENCH_SRC_DIR = f'{CSC368H1_DIR}/workloads'
+MIBENCH_BIN_DIR = f'{CSC368H1_DIR}/workloads'
 
 
 ##############################################################################
@@ -53,170 +53,170 @@ class KernelDaxpySmall(Process):
 
 
 class MIBenchBasicmathSmall(Process):
-    executable = f"{MIBENCH_BIN_DIR}/basicmath_small"
+    executable = f"{MIBENCH_BIN_DIR}/basicmath/basicmath_small"
     cmd = [
-        f"{MIBENCH_BIN_DIR}/basicmath_small",
+        f"{MIBENCH_BIN_DIR}/basicmath/basicmath_small",
     ]
 
 
 class MIBenchBasicmath(Process):
-    executable = f"{MIBENCH_BIN_DIR}/basicmath_large"
+    executable = f"{MIBENCH_BIN_DIR}/basicmath/basicmath_large"
     cmd = [
-        f"{MIBENCH_BIN_DIR}/basicmath_large",
+        f"{MIBENCH_BIN_DIR}/basicmath/basicmath_large",
     ]
 
 
 class MIBenchBitcountsSmall(Process):
-    executable = f'{MIBENCH_BIN_DIR}/bitcnts'
+    executable = f'{MIBENCH_BIN_DIR}/bitcount/bitcnts'
     cmd = [
-        f'{MIBENCH_BIN_DIR}/bitcnts',
+        f'{MIBENCH_BIN_DIR}/bitcount/bitcnts',
         '75000'
     ]
 
 
 class MIBenchBitcounts(Process):
-    executable = f'{MIBENCH_BIN_DIR}/bitcnts'
+    executable = f'{MIBENCH_BIN_DIR}/bitcount/bitcnts'
     cmd = [
-        f'{MIBENCH_BIN_DIR}/bitcnts',
+        f'{MIBENCH_BIN_DIR}/bitcount/bitcnts',
         '1125000'
     ]
 
 
 class MIBenchQsortSmall(Process):
-    executable = f'{MIBENCH_BIN_DIR}/qsort_small'
+    executable = f'{MIBENCH_BIN_DIR}/qsort/qsort_small'
     cmd = [
-        f'{MIBENCH_BIN_DIR}/qsort_small',
-        f'{MIBENCH_SRC_DIR}/automotive/qsort/input_small.dat',
+        f'{MIBENCH_BIN_DIR}/qsort/qsort_small',
+        f'{MIBENCH_SRC_DIR}/qsort/input_small.dat',
     ]
 
 
 class MIBenchQsort(Process):
-    executable = f'{MIBENCH_BIN_DIR}/qsort_large'
+    executable = f'{MIBENCH_BIN_DIR}/qsort/qsort_large'
     cmd = [
-        f'{MIBENCH_BIN_DIR}/qsort_large',
-        f'{MIBENCH_SRC_DIR}/automotive/qsort/input_large.dat',
+        f'{MIBENCH_BIN_DIR}/qsort/qsort_large',
+        f'{MIBENCH_SRC_DIR}/qsort/input_large.dat',
     ]
 
 
 class MIBenchSusanEdgesSmall(Process):
-    executable = f'{MIBENCH_BIN_DIR}/susan'
+    executable = f'{MIBENCH_BIN_DIR}/susan/susan'
     cmd = [
-        f'{MIBENCH_BIN_DIR}/susan',
-        f'{MIBENCH_SRC_DIR}/automotive/susan/input_small.pgm',
+        f'{MIBENCH_BIN_DIR}/susan/susan',
+        f'{MIBENCH_SRC_DIR}/susan/input_small.pgm',
         f'{args.out_dir}/output_small.edges.pgm',
         '-e'
     ]
 
 
 class MIBenchSusanSmoothingSmall(Process):
-    executable = f'{MIBENCH_BIN_DIR}/susan'
+    executable = f'{MIBENCH_BIN_DIR}/susan/susan'
     cmd = [
-        f'{MIBENCH_BIN_DIR}/susan',
-        f'{MIBENCH_SRC_DIR}/automotive/susan/input_small.pgm',
+        f'{MIBENCH_BIN_DIR}/susan/susan',
+        f'{MIBENCH_SRC_DIR}/susan/input_small.pgm',
         f'{args.out_dir}/output_small.smoothing.pgm',
         '-s'
     ]
 
 
 class MIBenchSusanCornersSmall(Process):
-    executable = f'{MIBENCH_BIN_DIR}/susan'
+    executable = f'{MIBENCH_BIN_DIR}/susan/susan'
     cmd = [
-        f'{MIBENCH_BIN_DIR}/susan',
-        f'{MIBENCH_SRC_DIR}/automotive/susan/input_small.pgm',
+        f'{MIBENCH_BIN_DIR}/susan/susan',
+        f'{MIBENCH_SRC_DIR}/susan/input_small.pgm',
         f'{args.out_dir}/output_small.corners.pgm',
         '-c'
     ]
 
 
 class MIBenchSusanEdges(Process):
-    executable = f'{MIBENCH_BIN_DIR}/susan'
+    executable = f'{MIBENCH_BIN_DIR}/susan/susan'
     cmd = [
-        f'{MIBENCH_BIN_DIR}/susan',
-        f'{MIBENCH_SRC_DIR}/automotive/susan/input_large.pgm',
+        f'{MIBENCH_BIN_DIR}/susan/susan',
+        f'{MIBENCH_SRC_DIR}/susan/input_large.pgm',
         f'{args.out_dir}/output_large.edges.pgm',
         '-e'
     ]
 
 
 class MIBenchSusanSmoothing(Process):
-    executable = f'{MIBENCH_BIN_DIR}/susan'
+    executable = f'{MIBENCH_BIN_DIR}/susan/susan'
     cmd = [
-        f'{MIBENCH_BIN_DIR}/susan',
-        f'{MIBENCH_SRC_DIR}/automotive/susan/input_large.pgm',
+        f'{MIBENCH_BIN_DIR}/susan/susan',
+        f'{MIBENCH_SRC_DIR}/susan/input_large.pgm',
         f'{args.out_dir}/output_large.smoothing.pgm',
         '-s'
     ]
 
 
 class MIBenchSusanCorners(Process):
-    executable = f'{MIBENCH_BIN_DIR}/susan'
+    executable = f'{MIBENCH_BIN_DIR}/susan/susan'
     cmd = [
-        f'{MIBENCH_BIN_DIR}/susan',
-        f'{MIBENCH_SRC_DIR}/automotive/susan/input_large.pgm',
+        f'{MIBENCH_BIN_DIR}/susan/susan',
+        f'{MIBENCH_SRC_DIR}/susan/input_large.pgm',
         f'{args.out_dir}/output_large.corners.pgm',
         '-c'
     ]
 
 
 class MIBenchJpegEncodeSmall(Process):
-    executable = f'{MIBENCH_BIN_DIR}/cjpeg'
+    executable = f'{MIBENCH_BIN_DIR}/jpeg/jpeg-6a/cjpeg'
     cmd = [
-        f'{MIBENCH_BIN_DIR}/cjpeg',
+        f'{MIBENCH_BIN_DIR}/jpeg/jpeg-6a/cjpeg',
         '-dct', 'int',
         '-progressive',
         '-optimize',
         '-outfile', f'{args.out_dir}/output_small_encode.jpeg',
-        f'{MIBENCH_SRC_DIR}/consumer/jpeg/input_small.ppm'
+        f'{MIBENCH_SRC_DIR}/jpeg/input_small.ppm'
     ]
 
 
 class MIBenchJpegEncode(Process):
-    executable = f'{MIBENCH_BIN_DIR}/cjpeg'
+    executable = f'{MIBENCH_BIN_DIR}/jpeg/jpeg-6a/cjpeg'
     cmd = [
-        f'{MIBENCH_BIN_DIR}/cjpeg',
+        f'{MIBENCH_BIN_DIR}/jpeg/jpeg-6a/cjpeg',
         '-dct', 'int',
         '-progressive',
         '-optimize',
         '-outfile', f'{args.out_dir}/output_large_encode.jpeg',
-        f'{MIBENCH_SRC_DIR}/consumer/jpeg/input_large.ppm'
+        f'{MIBENCH_SRC_DIR}/jpeg/input_large.ppm'
     ]
 
- 
+
 class MIBenchJpegDecodeSmall(Process):
-    executable = f'{MIBENCH_BIN_DIR}/djpeg'
+    executable = f'{MIBENCH_BIN_DIR}/jpeg/jpeg-6a/djpeg'
     cmd = [
-        f'{MIBENCH_BIN_DIR}/djpeg',
+        f'{MIBENCH_BIN_DIR}/jpeg/jpeg-6a/djpeg',
         '-dct', 'int',
         '-ppm',
         '-outfile', f'{args.out_dir}/output_small_decode.ppm',
-        f'{MIBENCH_SRC_DIR}/consumer/jpeg/input_small.jpg'
+        f'{MIBENCH_SRC_DIR}/jpeg/input_small.jpg'
     ]
 
 
 class MIBenchJpegDecode(Process):
-    executable = f'{MIBENCH_BIN_DIR}/djpeg'
+    executable = f'{MIBENCH_BIN_DIR}/jpeg/jpeg-6a/djpeg'
     cmd = [
-        f'{MIBENCH_BIN_DIR}/djpeg',
+        f'{MIBENCH_BIN_DIR}/jpeg/jpeg-6a/djpeg',
         '-dct', 'int',
         '-ppm',
         '-outfile', f'{args.out_dir}/output_large_decode.ppm',
-        f'{MIBENCH_SRC_DIR}/consumer/jpeg/input_large.jpg'
+        f'{MIBENCH_SRC_DIR}/jpeg/input_large.jpg'
     ]
 
 
 class MIBenchDijkstraSmall(Process):
-    executable = f"{MIBENCH_BIN_DIR}/dijkstra_small"
+    executable = f"{MIBENCH_BIN_DIR}/dijkstra/dijkstra_small"
     cmd = [
-        f"{MIBENCH_BIN_DIR}/dijkstra_small",
-        f"{MIBENCH_SRC_DIR}/network/dijkstra/input.dat",
+        f"{MIBENCH_BIN_DIR}/dijkstra/dijkstra_small",
+        f"{MIBENCH_SRC_DIR}/dijkstra/input.dat",
     ]
 
 
 class MIBenchDijkstra(Process):
-    executable = f"{MIBENCH_BIN_DIR}/dijkstra_large"
+    executable = f"{MIBENCH_BIN_DIR}/dijkstra/dijkstra_large"
     cmd = [
-        f"{MIBENCH_BIN_DIR}/dijkstra_large",
-        f"{MIBENCH_SRC_DIR}/network/dijkstra/input.dat",
+        f"{MIBENCH_BIN_DIR}/dijkstra/dijkstra_large",
+        f"{MIBENCH_SRC_DIR}/dijkstra/input.dat",
     ]
 
 
