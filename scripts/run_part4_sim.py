@@ -2,7 +2,7 @@
 run_part4_sim.py
 Runs all Part 4 simulations for CSC368H1 Assignment 3
 Tests 4 different processor configurations across all workloads
-Uses multiprocessing to run up to 4 simulations in parallel
+Uses multiprocessing to run up to 6 simulations in parallel
 
 Priority Management:
 - Run this script with: nice -n -10 python3 scripts/run_part4_sim.py
@@ -46,7 +46,7 @@ WORKLOADS = [
 
 # Maximum number of parallel gem5 simulations to run at once
 # Adjust based on your system's CPU cores and memory
-MAX_PARALLEL_PROCESSES = 4
+MAX_PARALLEL_PROCESSES = 6
 
 # gem5 executable path (adjust if needed)
 # Common locations:
