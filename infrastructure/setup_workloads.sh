@@ -32,16 +32,18 @@ fi
 echo "m5 library build complete or using existing build"
 
 # Create directories for gem5 headers and libraries
-sudo mkdir -p /usr/local/include/gem5
+sudo mkdir -p /usr/local/include
 sudo mkdir -p /usr/local/lib
 
-# Copy m5ops header - try multiple possible locations
-if [ -f "/opt/gem5/include/gem5/m5ops.h" ]; then
-  sudo cp /opt/gem5/include/gem5/m5ops.h /usr/local/include/gem5/
-elif [ -f "/opt/gem5/include/m5ops.h" ]; then
-  sudo cp /opt/gem5/include/m5ops.h /usr/local/include/gem5/
+# Copy entire gem5 include directory to preserve directory structure
+if [ -d "/opt/gem5/include/gem5" ]; then
+  sudo cp -r /opt/gem5/include/gem5 /usr/local/include/
+  echo "Copied gem5 include directory"
+elif [ -d "/opt/gem5/include" ]; then
+  sudo cp -r /opt/gem5/include/* /usr/local/include/
+  echo "Copied all gem5 headers"
 else
-  echo "Warning: m5ops.h not found in expected locations"
+  echo "Warning: gem5 include directory not found"
 fi
 
 # Copy m5 library - try multiple possible locations
