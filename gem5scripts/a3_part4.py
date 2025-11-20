@@ -205,18 +205,18 @@ class MIBenchJpegDecode(Process):
 
 
 class MIBenchDijkstraSmall(Process):
-    executable = f"{MIBENCH_BIN_DIR}/dijkstra/dijkstra_small"
+    executable = f"{MIBENCH_BIN_DIR}/dijkstra_small"
     cmd = [
-        f"{MIBENCH_BIN_DIR}/dijkstra/dijkstra_small",
-        f"{MIBENCH_SRC_DIR}/dijkstra/input.dat",
+        f"{MIBENCH_BIN_DIR}/dijkstra_small",
+        f"{MIBENCH_SRC_DIR}/network/dijkstra/input.dat",
     ]
 
 
 class MIBenchDijkstra(Process):
-    executable = f"{MIBENCH_BIN_DIR}/dijkstra/dijkstra_large"
+    executable = f"{MIBENCH_BIN_DIR}/dijkstra_large"
     cmd = [
-        f"{MIBENCH_BIN_DIR}/dijkstra/dijkstra_large",
-        f"{MIBENCH_SRC_DIR}/dijkstra/input.dat",
+        f"{MIBENCH_BIN_DIR}/dijkstra_large",
+        f"{MIBENCH_SRC_DIR}/network/dijkstra/input.dat",
     ]
 
 
