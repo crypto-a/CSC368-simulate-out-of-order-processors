@@ -64,6 +64,7 @@ cd ..
 echo "  Compiling jpeg..."
 cd jpeg/jpeg-6a
 make clean 2>/dev/null || true
+chmod +x configure 2>/dev/null || true
 ./configure --prefix=$(pwd) 2>&1 | grep -v "checking" || true
 make 2>&1 | grep -v "warning:" || true
 # Binaries (cjpeg, djpeg) will be in jpeg-6a directory

@@ -70,8 +70,8 @@ resource "null_resource" "install_gem5_and_python" {
       "fi",
 
       "echo '===== Installing Python dependencies ====='",
-      "python3 -m pip install --upgrade pip",
-      "python3 -m pip install -r requirements.txt || echo 'Note: Some dependencies may have failed to install'",
+      "python3 -m pip install --upgrade pip --break-system-packages",
+      "python3 -m pip install -r requirements.txt --break-system-packages || echo 'Note: Some dependencies may have failed to install'",
 
       "echo '===== Setting up workloads ====='",
       "chmod +x infrastructure/setup_workloads.sh",
