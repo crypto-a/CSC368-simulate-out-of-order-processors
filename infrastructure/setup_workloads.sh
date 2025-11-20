@@ -6,8 +6,28 @@ set -e
 
 echo "===== Setting up MIBench workloads ====="
 
+# First, build gem5 m5 utility library
+echo "===== Building gem5 m5 utility library ====="
+cd /opt/gem5/util/m5
+make -f Makefile.x86
+echo "m5 library built successfully"
+
+# Create directories for gem5 headers and libraries
+sudo mkdir -p /usr/local/include/gem5
+sudo mkdir -p /usr/local/lib
+
+# Copy m5ops header and library
+sudo cp /opt/gem5/include/gem5/m5ops.h /usr/local/include/gem5/
+sudo cp /opt/gem5/util/m5/build/x86/out/libm5.a /usr/local/lib/
+
+echo "gem5 m5 library installed to /usr/local"
+
 # Navigate to workloads directory
 cd ~/CSC368-simulate-out-of-order-processors/workloads
+
+# Fix all Makefiles to use correct paths
+echo "Fixing Makefile paths..."
+bash ~/CSC368-simulate-out-of-order-processors/infrastructure/fix_makefiles.sh
 
 # Compile each workload
 echo "Compiling workloads..."
