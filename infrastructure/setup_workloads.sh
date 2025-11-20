@@ -9,7 +9,15 @@ echo "===== Setting up MIBench workloads ====="
 # First, build gem5 m5 utility library
 echo "===== Building gem5 m5 utility library ====="
 cd /opt/gem5/util/m5
-make -f Makefile.x86
+# Try modern makefile structure first, fall back to old if needed
+if [ -f "Makefile" ]; then
+  scons build/x86/out/m5 || (cd src && make)
+elif [ -f "Makefile.x86" ]; then
+  make -f Makefile.x86
+else
+  echo "Warning: Could not find m5 Makefile, trying default make"
+  make
+fi
 echo "m5 library built successfully"
 
 # Create directories for gem5 headers and libraries
