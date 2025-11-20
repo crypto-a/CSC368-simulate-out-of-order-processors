@@ -8,27 +8,61 @@ echo "===== Setting up MIBench workloads ====="
 
 # First, build gem5 m5 utility library
 echo "===== Building gem5 m5 utility library ====="
+
+# In gem5 v25+, m5 utility needs to be built with scons from the util/m5 directory
 cd /opt/gem5/util/m5
-# Try modern makefile structure first, fall back to old if needed
-if [ -f "Makefile" ]; then
-  scons build/x86/out/m5 || (cd src && make)
-elif [ -f "Makefile.x86" ]; then
-  make -f Makefile.x86
-else
-  echo "Warning: Could not find m5 Makefile, trying default make"
+
+# Try to build m5 for x86_64
+if [ -f "SConstruct" ]; then
+  echo "Building m5 using scons..."
+  scons build/x86/out/m5
+elif [ -d "src" ]; then
+  echo "Building m5 from source directory..."
+  cd src
   make
+  cd ..
+else
+  echo "Using pre-built m5 or building with alternate method..."
+  # Some gem5 versions build m5 as part of main build
+  cd /opt/gem5
+  scons build/x86/m5/m5 || echo "m5 may already be built"
+  cd util/m5
 fi
-echo "m5 library built successfully"
+
+echo "m5 library build complete or using existing build"
 
 # Create directories for gem5 headers and libraries
 sudo mkdir -p /usr/local/include/gem5
 sudo mkdir -p /usr/local/lib
 
-# Copy m5ops header and library
-sudo cp /opt/gem5/include/gem5/m5ops.h /usr/local/include/gem5/
-sudo cp /opt/gem5/util/m5/build/x86/out/libm5.a /usr/local/lib/
+# Copy m5ops header - try multiple possible locations
+if [ -f "/opt/gem5/include/gem5/m5ops.h" ]; then
+  sudo cp /opt/gem5/include/gem5/m5ops.h /usr/local/include/gem5/
+elif [ -f "/opt/gem5/include/m5ops.h" ]; then
+  sudo cp /opt/gem5/include/m5ops.h /usr/local/include/gem5/
+else
+  echo "Warning: m5ops.h not found in expected locations"
+fi
 
-echo "gem5 m5 library installed to /usr/local"
+# Copy m5 library - try multiple possible locations
+if [ -f "/opt/gem5/util/m5/build/x86/out/libm5.a" ]; then
+  sudo cp /opt/gem5/util/m5/build/x86/out/libm5.a /usr/local/lib/
+elif [ -f "/opt/gem5/util/m5/libm5.a" ]; then
+  sudo cp /opt/gem5/util/m5/libm5.a /usr/local/lib/
+elif [ -f "/opt/gem5/build/x86/m5/libm5.a" ]; then
+  sudo cp /opt/gem5/build/x86/m5/libm5.a /usr/local/lib/
+else
+  echo "Warning: libm5.a not found - trying to create from object files"
+  # Try to find m5.o and create library from it
+  M5_OBJ=$(find /opt/gem5 -name "m5.o" -o -name "m5ops*.o" | head -1)
+  if [ -n "$M5_OBJ" ]; then
+    sudo ar rcs /usr/local/lib/libm5.a $M5_OBJ
+  fi
+fi
+
+echo "gem5 m5 library installation complete"
+ls -la /usr/local/include/gem5/
+ls -la /usr/local/lib/libm5.a 2>/dev/null || echo "Warning: libm5.a may not be installed"
 
 # Navigate to workloads directory
 cd ~/CSC368-simulate-out-of-order-processors/workloads

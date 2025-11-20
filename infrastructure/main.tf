@@ -24,11 +24,9 @@ resource "null_resource" "install_gem5_and_python" {
       "echo 'Updating package lists...'",
       "sudo apt-get update -y",
 
-      "echo 'Installing Python ${var.python_version} and dependencies...'",
+      "echo 'Installing Python and dependencies...'",
       "sudo apt-get install -y software-properties-common",
-      "sudo add-apt-repository -y ppa:deadsnakes/ppa || true",
-      "sudo apt-get update -y",
-      "sudo apt-get install -y python${var.python_version} python${var.python_version}-dev python${var.python_version}-venv python3-pip",
+      "sudo apt-get install -y python3 python3-dev python3-venv python3-pip",
 
       "echo 'Installing build tools and dependencies...'",
       "sudo apt-get install -y build-essential git scons gcc g++ m4",
@@ -71,15 +69,15 @@ resource "null_resource" "install_gem5_and_python" {
 
       "echo '===== Installing Python dependencies ====='",
       "python3 -m pip install --upgrade pip --break-system-packages",
-      "python3 -m pip install -r requirements.txt --break-system-packages || echo 'Note: Some dependencies may have failed to install'",
+      "cd ~/CSC368-simulate-out-of-order-processors && python3 -m pip install -r requirements.txt --break-system-packages || echo 'Note: Some dependencies may have failed to install'",
 
       "echo '===== Setting up workloads ====='",
-      "chmod +x infrastructure/setup_workloads.sh",
-      "bash infrastructure/setup_workloads.sh",
+      "cd ~/CSC368-simulate-out-of-order-processors && chmod +x infrastructure/setup_workloads.sh",
+      "cd ~/CSC368-simulate-out-of-order-processors && bash infrastructure/setup_workloads.sh",
 
       "echo '===== Installation completed ====='",
       "echo 'Verifying installations...'",
-      "python${var.python_version} --version",
+      "python3 --version",
       "echo 'gem5 location: ${var.gem5_install_path}'",
       "ls -la ${var.gem5_install_path}/build/X86/ || echo 'gem5 build not found - may need manual build'",
       "echo 'Project location: ~/CSC368-simulate-out-of-order-processors'",
@@ -138,7 +136,7 @@ resource "null_resource" "install_gem5_and_python" {
       "  sleep 30",
       "  WAIT_TIME=`expr $$WAIT_TIME + 30`",
       "  COMPLETED=`grep -c 'COMPLETED:' ~/CSC368-simulate-out-of-order-processors/data/part4/master_log.txt 2>/dev/null || echo 0`",
-      "  echo \"Progress: $$COMPLETED completed (waited $$WAIT_TIME\"s\" of $$MAX_WAIT\"s\" max)\"",
+      "  echo \"Progress: $$COMPLETED completed (waited $${WAIT_TIME}s of $${MAX_WAIT}s max)\"",
       "done",
 
       "if [ $$WAIT_TIME -ge $$MAX_WAIT ]; then",
