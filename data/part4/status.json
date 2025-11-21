@@ -1,0 +1,25 @@
+{
+  "start_time": "2025-11-20T16:58:09.429790",
+  "total_simulations": 36,
+  "completed": 0,
+  "failed": 0,
+  "in_progress": 36,
+  "designs": [
+    "design_a",
+    "design_b",
+    "design_c",
+    "design_d"
+  ],
+  "workloads": [
+    "basicmath",
+    "bitcounts",
+    "qsort",
+    "susan_edges",
+    "susan_corners",
+    "susan_smoothing",
+    "jpeg_encode",
+    "jpeg_decode",
+    "dijkstra"
+  ],
+  "simulations": {}
+}

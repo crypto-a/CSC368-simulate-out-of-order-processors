@@ -1,0 +1,73 @@
+[2025-11-20 16:58:09] Starting 36 simulations with 6 workers
+[2025-11-20 16:58:09] STARTING: design_a/basicmath
+[2025-11-20 16:58:09] STARTING: design_a/susan_corners
+[2025-11-20 16:58:09] STARTING: design_a/jpeg_encode
+[2025-11-20 16:58:09] STARTING: design_a/dijkstra
+[2025-11-20 16:58:09] STARTING: design_a/qsort
+[2025-11-20 16:58:09] STARTING: design_b/bitcounts
+[2025-11-20 16:59:59] COMPLETED: design_a/susan_corners in 110.5s
+[2025-11-20 16:59:59] STARTING: design_a/susan_smoothing
+[2025-11-20 17:06:07] COMPLETED: design_a/jpeg_encode in 478.2s
+[2025-11-20 17:06:07] STARTING: design_a/jpeg_decode
+[2025-11-20 17:08:08] COMPLETED: design_a/jpeg_decode in 120.6s
+[2025-11-20 17:08:08] STARTING: design_b/susan_edges
+[2025-11-20 17:12:50] COMPLETED: design_b/susan_edges in 281.7s
+[2025-11-20 17:12:50] STARTING: design_b/susan_corners
+[2025-11-20 17:14:44] COMPLETED: design_b/susan_corners in 114.2s
+[2025-11-20 17:14:44] STARTING: design_b/susan_smoothing
+[2025-11-20 17:25:52] COMPLETED: design_a/dijkstra in 1663.1s
+[2025-11-20 17:25:52] STARTING: design_b/basicmath
+[2025-11-20 17:31:46] COMPLETED: design_a/susan_smoothing in 1907.0s
+[2025-11-20 17:31:46] STARTING: design_b/jpeg_decode
+[2025-11-20 17:33:48] COMPLETED: design_b/jpeg_decode in 121.3s
+[2025-11-20 17:33:48] STARTING: design_b/dijkstra
+[2025-11-20 17:39:26] COMPLETED: design_a/qsort in 2477.3s
+[2025-11-20 17:39:26] STARTING: design_a/susan_edges
+[2025-11-20 17:41:31] COMPLETED: design_b/bitcounts in 2602.4s
+[2025-11-20 17:41:31] STARTING: design_b/qsort
+[2025-11-20 17:44:09] COMPLETED: design_a/susan_edges in 282.9s
+[2025-11-20 17:44:09] STARTING: design_c/basicmath
+[2025-11-20 17:47:00] COMPLETED: design_b/susan_smoothing in 1935.8s
+[2025-11-20 17:47:00] STARTING: design_b/jpeg_encode
+[2025-11-20 17:55:04] COMPLETED: design_b/jpeg_encode in 484.3s
+[2025-11-20 17:55:04] STARTING: design_c/qsort
+[2025-11-20 18:01:36] COMPLETED: design_b/dijkstra in 1668.4s
+[2025-11-20 18:01:36] STARTING: design_c/susan_corners
+[2025-11-20 18:03:33] COMPLETED: design_c/susan_corners in 117.1s
+[2025-11-20 18:03:33] STARTING: design_c/susan_smoothing
+[2025-11-20 18:23:19] COMPLETED: design_b/qsort in 2507.6s
+[2025-11-20 18:23:19] STARTING: design_c/jpeg_encode
+[2025-11-20 18:31:17] COMPLETED: design_c/jpeg_encode in 477.8s
+[2025-11-20 18:31:17] STARTING: design_c/jpeg_decode
+[2025-11-20 18:33:19] COMPLETED: design_c/jpeg_decode in 122.4s
+[2025-11-20 18:33:19] STARTING: design_c/dijkstra
+[2025-11-20 18:36:47] COMPLETED: design_c/susan_smoothing in 1993.6s
+[2025-11-20 18:36:47] STARTING: design_d/bitcounts
+[2025-11-20 18:37:43] COMPLETED: design_c/qsort in 2559.5s
+[2025-11-20 18:37:43] STARTING: design_c/susan_edges
+[2025-11-20 18:42:29] COMPLETED: design_c/susan_edges in 285.5s
+[2025-11-20 18:42:29] STARTING: design_d/susan_edges
+[2025-11-20 18:47:20] COMPLETED: design_d/susan_edges in 290.9s
+[2025-11-20 18:47:20] STARTING: design_d/susan_corners
+[2025-11-20 18:49:12] COMPLETED: design_d/susan_corners in 111.9s
+[2025-11-20 18:49:12] STARTING: design_d/susan_smoothing
+[2025-11-20 19:00:50] COMPLETED: design_c/dijkstra in 1650.4s
+[2025-11-20 19:00:50] STARTING: design_d/basicmath
+[2025-11-20 19:20:42] COMPLETED: design_d/bitcounts in 2634.8s
+[2025-11-20 19:20:42] STARTING: design_d/qsort
+[2025-11-20 19:22:21] COMPLETED: design_d/susan_smoothing in 1989.3s
+[2025-11-20 19:22:21] STARTING: design_d/jpeg_encode
+[2025-11-20 19:30:27] COMPLETED: design_d/jpeg_encode in 486.6s
+[2025-11-20 19:30:27] STARTING: design_d/jpeg_decode
+[2025-11-20 19:32:31] COMPLETED: design_d/jpeg_decode in 123.7s
+[2025-11-20 19:32:31] STARTING: design_d/dijkstra
+[2025-11-20 20:00:12] COMPLETED: design_d/dijkstra in 1660.6s
+[2025-11-20 20:02:11] COMPLETED: design_d/qsort in 2489.0s
+[2025-11-20 21:46:13] COMPLETED: design_a/basicmath in 17284.0s
+[2025-11-20 21:46:13] STARTING: design_a/bitcounts
+[2025-11-20 22:18:28] COMPLETED: design_b/basicmath in 17556.4s
+[2025-11-20 22:28:40] COMPLETED: design_a/bitcounts in 2547.3s
+[2025-11-20 22:32:13] COMPLETED: design_c/basicmath in 17283.7s
+[2025-11-20 22:32:13] STARTING: design_c/bitcounts
+[2025-11-20 23:13:05] COMPLETED: design_c/bitcounts in 2452.6s
+[2025-11-20 23:38:48] COMPLETED: design_d/basicmath in 16678.7s
