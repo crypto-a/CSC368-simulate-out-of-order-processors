@@ -1,0 +1,575 @@
+/**
+ * @file pagetable.c
+ * @brief Students' page table implementation
+ *
+ * This code is provided solely for the personal and private use of students
+ * taking the CSC369H course at the University of Toronto. Copying for purposes
+ * other than this use is expressly prohibited. All forms of distribution of
+ * this code, including but not limited to public repositories on GitHub,
+ * GitLab, Bitbucket, or any other online platform, whether as given or with
+ * any changes, are expressly prohibited.
+ *
+ * @author Andrew Peterson
+ * @author Karen Reid
+ * @author Alexey Khrabrov
+ * @author Angela Brown
+ * @author Kuei (Jack) Sun
+ * @author Nagata Parama Aptana
+ * @author Louis Ryan Tan
+ *
+ * All of the files in this directory and all subdirectories are:
+ * @copyright Copyright (c) 2019, 2021 Karen Reid
+ * @copyright Copyright (c) 2023, Angela Brown, Kuei (Jack) Sun
+ */
+
+#include <assert.h>
+#include <stdio.h>
+#include <string.h>
+
+#include "malloc369.h"
+#include "ptrarray.h"
+#include "sim.h"
+#include "coremap.h"
+#include "swap.h"
+#include "tlb.h"
+#include "types.h"
+#include "pagetable.h"
+
+// 9 bits per level
+#define PT_LEVEL_BITS 9
+#define PT_LEVEL_SIZE (1 << PT_LEVEL_BITS)
+#define PT_NUM_LEVELS 4
+
+extern int current_task_id();
+extern struct task_s * current_task();
+
+struct pt_entry_s {
+	pfn_t frame_number;
+    off_t swap_offset;
+    vpn_t vpn;
+    asid_t asid;
+
+    bool valid;
+    bool dirty;
+    bool writable;
+};
+
+struct pagetable {
+	void *entries[PT_LEVEL_SIZE];
+};
+
+// Counters for various events.
+// Your code must increment these when the related events occur.
+size_t ram_hit_count = 0;
+size_t ram_miss_count = 0;
+size_t ref_count = 0;
+size_t evict_clean_count = 0;
+size_t evict_dirty_count = 0;
+size_t cow_fault_count = 0;
+size_t write_fault_count = 0;
+
+/* Allocate zeroed pages.
+ */
+[[maybe_unused]]
+static void *
+alloc_zeroed_pages(size_t npages)
+{
+	assert(npages > 0);
+    void *pages = malloc369(npages * PAGE_SIZE);
+
+    if (pages) {
+        memset(pages, 0, npages * PAGE_SIZE);
+    }
+    return pages;
+}
+
+bool __nonnull() is_valid_pte(const pt_entry_t *pte)
+{
+    assert(pte != NULL);
+    return pte->valid;
+}
+
+bool __nonnull() is_dirty_pte(const pt_entry_t *pte)
+{
+    assert(pte != NULL);
+    return pte->dirty;
+}
+
+bool __nonnull() is_swapped_pte(const pt_entry_t *pte)
+{
+    assert(pte != NULL);
+    return pte->swap_offset != INVALID_SWAP;
+}
+
+bool __nonnull() is_readonly_pte(const pt_entry_t *pte)
+{
+    assert(pte != NULL);
+    return !pte->writable;
+}
+
+/* Returns true if a write of type `type` to page referenced by pte results in
+ * a CoW fault, otherwise false.
+ */
+[[maybe_unused]]
+static __nonnull() bool
+is_cow_fault(pt_entry_t *pte, char type)
+{
+	// TODO: your code here
+	(void)pte;
+	(void)type;
+	return false;
+}
+
+pfn_t __nonnull() framenum_from_pte(const pt_entry_t *pte)
+{
+	assert(pte != NULL);
+	return pte->frame_number;
+}
+
+pagetable_t *create_pagetable(void)
+{
+	// allocat the pagetabel structure
+    pagetable_t *pg_tbl = alloc_zeroed_pages(1);
+
+    return pg_tbl;
+}
+
+/* Update pte information after its referenced frame just got evicted.
+ *
+ * Update the tlb as well to ensure consistent state.
+ */
+[[maybe_unused]]
+static void
+handle_pte_evict(pt_entry_t * pte, off_t swap_offset, asid_t asid)
+{
+	assert(pte != NULL);
+
+    // make page invalid
+    pte->valid = false;
+
+    // Store swap
+    pte->swap_offset = swap_offset;
+
+
+    (void)asid;
+}
+
+[[maybe_unused]]
+void handle_frame_evict(pfn_t framenum, asid_t asid)
+{
+	  assert(framenum != INVALID_FRAME);
+
+    frame_t *frame = frame_from_number(framenum);
+    if (frame == NULL) {
+        return;
+    }
+
+    ptrarray_slice_t ptes = get_referring_ptes(frame);
+	assert(ptes.len > 0);
+
+    bool is_dirty = false;
+    off_t existing_swap = INVALID_SWAP;
+
+    for (size_t i = 0; i < ptes.len; i++) {
+        pt_entry_t *curr_pte = (pt_entry_t *)ptes.ptr[i];
+
+        if (is_dirty_pte(curr_pte)) {
+            is_dirty = true;
+        }
+
+        if (is_swapped_pte(curr_pte)) {
+            existing_swap = curr_pte->swap_offset;
+        }
+    }
+
+    off_t swap_offset = INVALID_SWAP;
+
+    if (is_dirty) {
+        swap_offset = swap_pageout(framenum, existing_swap);
+        evict_dirty_count++;
+    } else {
+        if (existing_swap != INVALID_SWAP) {
+            swap_offset = existing_swap;
+            evict_clean_count++;
+        } else {
+            swap_offset = swap_pageout(framenum, INVALID_SWAP);
+            evict_dirty_count++;
+        }
+    }
+
+    for (size_t i = 0; i < ptes.len; i++) {
+        pt_entry_t *curr_pte = (pt_entry_t *)ptes.ptr[i];
+        handle_pte_evict(curr_pte, swap_offset, asid);
+
+        tlb_index_t idx = tlbp(curr_pte->asid, curr_pte->vpn);
+        if (idx != TLB_PROBE_NOTFOUND) {
+            tlb_entry_t invalid = {0};
+            tlbwi(idx, &invalid);
+        }
+    }
+}
+
+/* Copy the frame with number `src` to frame number `dst` and
+ * return the pointer to the frame with number `dst`.
+ */
+[[maybe_unused]]
+static void *
+copy_frame(pfn_t dst, pfn_t src)
+{
+	assert(dst != INVALID_FRAME);
+    assert(src != INVALID_FRAME);
+
+    void *dst_ptr = &physmem[dst * SIMPAGESIZE];
+    void *src_ptr = &physmem[src * SIMPAGESIZE];
+
+    memcpy(dst_ptr, src_ptr, SIMPAGESIZE);
+
+    return dst_ptr;
+}
+
+/*
+ * Locate the physical frame number for the given vaddr using the page table.
+ *
+ * If the page table entry is invalid and not on swap, then this is the first
+ * reference to the page and a (simulated) physical frame should be allocated
+ * and initialized to all zeros (using init_frame from coremap.c).
+ * If the page table entry is invalid and on swap, then a (simulated) physical
+ * frame should be allocated and filled by reading the page data from swap.
+ *
+ * Make sure to update page table entry status information:
+ *  - the page table entry should be marked valid
+ *  - if the type of access is a write ('S'tore or 'M'odify),
+ *    the page table entry should be marked dirty
+ *  - a page should be marked dirty on the first reference to the page,
+ *    even if the type of access is a read ('L'oad or 'I'nstruction type).
+ *  - DO NOT UPDATE the page table entry 'referenced' information. That
+ *    should be done by the replacement algorithm functions.
+ *
+ * When you have a valid page table entry, return the page frame number
+ * that holds the requested virtual page.
+ *
+ * Counters for hit, miss and reference events should be incremented in
+ * this function.
+ */
+
+[[maybe_unused]]
+static pfn_t
+find_frame_number(pt_entry_t *pte, char type)
+{
+	assert(pte != NULL);
+
+    bool is_write = (type == 'S' || type == 'M');
+
+
+    // invaliud pte
+    if (!is_valid_pte(pte)&& !is_swapped_pte(pte))
+    {
+        // first reference to the page
+
+        pfn_t frame_number = allocate_frame(pte);
+        init_frame(frame_number);
+
+        // update pte
+        pte->frame_number = frame_number;
+        pte->valid = true;
+		pte->writable = true;
+		pte->dirty = false;
+
+        ram_miss_count++;
+
+
+        return frame_number;
+
+    }
+
+    if (!is_valid_pte(pte) && is_swapped_pte(pte))
+    {
+        // page is on swap
+        pfn_t frame_number = allocate_frame(pte);
+        swap_pagein(frame_number, pte->swap_offset);
+
+        pte->frame_number = frame_number;
+        pte->valid = true;
+        pte->writable = true;
+        pte->dirty = false;
+
+        ram_miss_count++;
+
+        return frame_number;
+    }
+
+
+    if (is_valid_pte(pte) && is_readonly_pte(pte) && is_write) {
+        // cow
+        pfn_t frame_src = pte->frame_number;
+
+        frame_unlink_pte(frame_src, pte);
+
+        pfn_t frame_dst = allocate_frame(pte);
+        copy_frame(frame_dst, frame_src);
+
+        pte->frame_number = frame_dst;
+        pte->writable = true;
+        pte->dirty = true;
+        pte->swap_offset = INVALID_SWAP;
+
+        cow_fault_count++;
+        ram_hit_count++;
+
+        return frame_dst;
+    }
+
+    if (is_valid_pte(pte)) {
+        // normal access
+		ram_hit_count++;
+		return pte->frame_number;
+    }
+
+
+    return INVALID_FRAME;
+}
+
+pt_entry_t * page_walk(pagetable_t *pt, vaddr_t vaddr, char type)
+{
+	assert(pt != NULL);
+
+    vpn_t vpn = (vaddr >> PAGE_SHIFT) & VPN_MASK;
+
+    //calc offset and indices
+    size_t idx_1 = (vpn >> (PT_LEVEL_BITS * 3)) & (PT_LEVEL_SIZE - 1);
+    size_t idx_2 = (vpn >> (PT_LEVEL_BITS * 2)) & (PT_LEVEL_SIZE - 1);
+    size_t idx_3 = (vpn >> (PT_LEVEL_BITS * 1)) & (PT_LEVEL_SIZE - 1);
+    size_t idx_4 = (vpn >> (PT_LEVEL_BITS * 0)) & (PT_LEVEL_SIZE - 1);
+
+
+    // go throguh lec 1
+    void **level_ptr = pt->entries;
+    if (level_ptr[idx_1] == NULL) {
+        // create level 2
+        level_ptr[idx_1] = create_pagetable();
+        if (level_ptr[idx_1] == NULL) return NULL;
+    }
+
+    level_ptr = ((pagetable_t *)level_ptr[idx_1])->entries;
+    if (level_ptr[idx_2] == NULL) {
+        // create level 3
+        level_ptr[idx_2] = create_pagetable();
+        if (level_ptr[idx_2] == NULL) return NULL;
+    }
+
+    level_ptr = ((pagetable_t *)level_ptr[idx_2])->entries;
+    if (level_ptr[idx_3] == NULL) {
+        // create level 4
+        level_ptr[idx_3] = create_pagetable();
+        if (level_ptr[idx_3] == NULL) return NULL;
+    }
+
+    level_ptr = ((pagetable_t *)level_ptr[idx_3])->entries;
+    if (level_ptr[idx_4] == NULL) {
+        // create pte
+        level_ptr[idx_4] = malloc369(sizeof(pt_entry_t));
+        if (level_ptr[idx_4] == NULL) return NULL;
+
+        pt_entry_t *new_pte = (pt_entry_t *)level_ptr[idx_4];
+
+        new_pte->frame_number = INVALID_FRAME;
+        new_pte->swap_offset = INVALID_SWAP;
+        new_pte->valid = false;
+        new_pte->dirty = false;
+        new_pte->writable = true;
+        new_pte->vpn = vpn;
+        new_pte->asid = 0;
+
+    }
+
+    pt_entry_t *pte = (pt_entry_t *)level_ptr[idx_4];
+    pte->vpn = vpn;
+
+    pfn_t frame = find_frame_number(pte, type);
+	if (frame == INVALID_FRAME) {
+		return NULL;  // allocation failed
+	}
+
+	return pte;
+}
+
+static void free_pte_helper(pagetable_t *pt, int level)
+{
+	assert(pt != NULL);
+	if (level == PT_NUM_LEVELS - 1) {
+
+		for (size_t i = 0; i < PT_LEVEL_SIZE; i++) {
+			pt_entry_t *pte = (pt_entry_t *)pt->entries[i];
+			if (pte != NULL) {
+				// Unlink
+				if (is_valid_pte(pte)) {
+					frame_unlink_pte(pte->frame_number, pte);
+				}
+
+				// Free swap
+				if (is_swapped_pte(pte)) {
+					swap_free(pte->swap_offset);
+				}
+
+				free369(pte);
+			}
+		}
+	} else {
+		for (size_t i = 0; i < PT_LEVEL_SIZE; i++) {
+			pagetable_t *next_level = (pagetable_t *)pt->entries[i];
+			if (next_level != NULL) {
+				// recusrivly call it
+				free_pte_helper(next_level, level + 1);
+			}
+		}
+	}
+	free369(pt);
+}
+
+void free_pagetable(pagetable_t * pt)
+{
+	assert(pt != NULL);
+
+
+	free_pte_helper(pt, 0);
+}
+
+pagetable_t *
+duplicate_pagetable(pagetable_t *src, asid_t src_asid)
+{
+	(void)src_asid;
+
+
+    if (src == NULL) {
+        return NULL;
+    }
+
+    pagetable_t *dst = create_pagetable();
+    if (dst == NULL) return NULL; // Check OOM
+
+    for (size_t i = 0; i < PT_LEVEL_SIZE; i++) {
+        if (src->entries[i] == NULL) continue;
+
+        pagetable_t *src_l1 = (pagetable_t *)src->entries[i];
+        pagetable_t *dst_l1 = create_pagetable();
+        if (dst_l1 == NULL) return NULL;
+        dst->entries[i] = dst_l1;
+
+        for (size_t j = 0; j < PT_LEVEL_SIZE; j++) {
+            if (src_l1->entries[j] == NULL) continue;
+
+            pagetable_t *src_l2 = (pagetable_t *)src_l1->entries[j];
+            pagetable_t *dst_l2 = create_pagetable();
+            if (dst_l2 == NULL) return NULL;
+            dst_l1->entries[j] = dst_l2;
+
+            for (size_t k = 0; k < PT_LEVEL_SIZE; k++) {
+                if (src_l2->entries[k] == NULL) continue;
+
+                pagetable_t *src_l3 = (pagetable_t *)src_l2->entries[k];
+                pagetable_t *dst_l3 = create_pagetable();
+                if (dst_l3 == NULL) return NULL;
+                dst_l2->entries[k] = dst_l3;
+
+                for (size_t m = 0; m < PT_LEVEL_SIZE; m++) {
+                    if (src_l3->entries[m] == NULL) continue;
+
+                    pt_entry_t *src_pte = (pt_entry_t *)src_l3->entries[m];
+
+                    // check
+                    pt_entry_t *dst_pte = malloc369(sizeof(pt_entry_t));
+                    if (dst_pte == NULL) return NULL;
+
+                    vpn_t src_vpn = (i << 27) | (j << 18) | (k << 9) | m;
+
+                    dst_pte->frame_number = INVALID_FRAME;
+                    dst_pte->swap_offset = INVALID_SWAP;
+                    dst_pte->valid = false;
+                    dst_pte->dirty = false;
+                    dst_pte->writable = false; // Default Read-Only
+                    dst_pte->vpn = src_vpn;
+                    dst_pte->asid = 0;
+
+                    if (is_valid_pte(src_pte)) {
+                        dst_pte->frame_number = src_pte->frame_number;
+                        dst_pte->valid = true;
+
+                        dst_pte->dirty = false;
+                        dst_pte->writable = false;
+
+                        frame_link_pte(src_pte->frame_number, dst_pte);
+
+                        // Update Parent
+                        src_pte->writable = false;
+                        src_pte->dirty = false; //  trap on parent
+
+                        // Invalidate Parent TLB
+                        tlb_index_t idx = tlbp(src_asid, src_vpn);
+                        if (idx != TLB_PROBE_NOTFOUND) {
+                            tlb_entry_t invalid_entry = {0};
+                            tlbwi(idx, &invalid_entry);
+                        }
+                    } else if (is_swapped_pte(src_pte)) {
+                        dst_pte->swap_offset = src_pte->swap_offset;
+                        dst_pte->writable = false;
+                        src_pte->writable = false;
+                    }
+
+                    dst_l3->entries[m] = dst_pte;
+                }
+            }
+        }
+    }
+
+    return dst;
+}
+
+
+void handle_tlb_fault(asid_t asid, pagetable_t *pt, vaddr_t vaddr, char type, bool write)
+{
+	assert(pt != NULL);
+
+	vpn_t vpn = (vaddr >> PAGE_SHIFT) & VPN_MASK;
+
+	char effective_type = write ? 'M' : type;
+
+	pt_entry_t *pte = page_walk(pt, vaddr, effective_type);
+
+	if (!pte || !is_valid_pte(pte)) {
+		return;
+	}
+
+	pte->asid = asid;
+
+	ref_count++;
+
+	if (write) {
+		write_fault_count++;
+		if (pte->writable) {
+			pte->dirty = true;
+		}
+	}
+
+	ref_func(framenum_from_pte(pte));
+
+	bool tlb_dirty = pte->writable && pte->dirty && write;
+
+	tlb_entry_t tlb_ent = (tlb_entry_t){
+			.fields = {
+					.pfn = framenum_from_pte(pte),
+					._padding = 0,
+					.dirty = tlb_dirty,
+					.vpn = vpn,
+					.valid = is_valid_pte(pte),
+					.asid = asid
+			}
+	};
+
+	tlb_index_t tlb_index = tlbp(asid, vpn);
+	if (tlb_index == TLB_PROBE_NOTFOUND) {
+		tlbwr(&tlb_ent);
+	} else {
+		tlbwi(tlb_index, &tlb_ent);
+	}
+}
+
